@@ -6,18 +6,6 @@
 
 using namespace Rcpp;
 
-// Inv_F_cpp
-double Inv_F_cpp(double u, double t0);
-RcppExport SEXP _semicure_Inv_F_cpp(SEXP uSEXP, SEXP t0SEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< double >::type u(uSEXP);
-    Rcpp::traits::input_parameter< double >::type t0(t0SEXP);
-    rcpp_result_gen = Rcpp::wrap(Inv_F_cpp(u, t0));
-    return rcpp_result_gen;
-END_RCPP
-}
 // G_gamma_cpp
 double G_gamma_cpp(double x, double gamma);
 RcppExport SEXP _semicure_G_gamma_cpp(SEXP xSEXP, SEXP gammaSEXP) {
@@ -30,25 +18,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// Sfcn_cpp
-double Sfcn_cpp(double gamma, double F_hat, arma::vec beta, arma::vec Z);
-RcppExport SEXP _semicure_Sfcn_cpp(SEXP gammaSEXP, SEXP F_hatSEXP, SEXP betaSEXP, SEXP ZSEXP) {
+// G_inv_cpp
+double G_inv_cpp(double y, double gamma);
+RcppExport SEXP _semicure_G_inv_cpp(SEXP ySEXP, SEXP gammaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type y(ySEXP);
     Rcpp::traits::input_parameter< double >::type gamma(gammaSEXP);
-    Rcpp::traits::input_parameter< double >::type F_hat(F_hatSEXP);
-    Rcpp::traits::input_parameter< arma::vec >::type beta(betaSEXP);
-    Rcpp::traits::input_parameter< arma::vec >::type Z(ZSEXP);
-    rcpp_result_gen = Rcpp::wrap(Sfcn_cpp(gamma, F_hat, beta, Z));
+    rcpp_result_gen = Rcpp::wrap(G_inv_cpp(y, gamma));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_semicure_Inv_F_cpp", (DL_FUNC) &_semicure_Inv_F_cpp, 2},
     {"_semicure_G_gamma_cpp", (DL_FUNC) &_semicure_G_gamma_cpp, 2},
-    {"_semicure_Sfcn_cpp", (DL_FUNC) &_semicure_Sfcn_cpp, 4},
+    {"_semicure_G_inv_cpp", (DL_FUNC) &_semicure_G_inv_cpp, 2},
     {NULL, NULL, 0}
 };
 

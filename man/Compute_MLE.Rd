@@ -28,14 +28,15 @@ n <- 200
 beta <- c(-1 / 2, 1,-1 / 2)
 t0 <- 4
 gamma <- 0.75
-cl <- makeCluster(4)
+cl <- makeCluster(10)
 registerDoSNOW(cl)
 result = foreach(i = 1:rep, .packages = "semicure") \%dopar\% {
+   .libPaths(c(.libPaths(), "~/R/x86_64-pc-linux-gnu-library/3.6"))
    n <- 200
    beta <- c(-1 / 2, 1,-1 / 2)
    t0 <- 4
-   gamma = 0.75
-   Compute_MLE(n, gamma, beta, t0)
+   gamma <- 0.75
+   semicure::Compute_MLE(n, gamma, beta, t0)
 }
 stopCluster(cl)
 
@@ -55,7 +56,7 @@ rowMeans(SEE) #SEE
 c = qnorm(1 - 0.025)
 cnt = c(0, 0)
 for (i in 1:rep) {
-  Test = abs(estimate[, i] - beta[-1]) <= c * SEE[, i] / sqrt(n)
+  Test = abs(estimate[, i] - beta[-1]) <= c * SEE[, i]
   cnt = cnt + Test
 }
 CP = cnt / rep

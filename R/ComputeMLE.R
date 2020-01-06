@@ -2,7 +2,6 @@ G_gamma <- function(x, gamma) {
   s = exp(-x) * (gamma == 0) + (1 + gamma * x) ^ (-1 / gamma) * (gamma > 0)
   return(s)
 }
-
 G_inv <- function(y, gamma) {
   if (gamma == 0) {
     return(-log(y))
@@ -11,8 +10,8 @@ G_inv <- function(y, gamma) {
     return (y ^ (-gamma) - 1) / gamma
   }
 }
-
-Inv_F = function(u) {
+#
+Inv_F_generic = function(u, t0) {
   a = (1 - u) * (1 - exp(-t0))
   return(-log(exp(-t0) + a))
 }
@@ -47,6 +46,67 @@ G_gamma_2d = function(x, gamma) {
                                                                                       0)
 }
 
+Lc_log_generic = function(para, Y, Z, S, Delta, gamma, n, t0) {
+  beta = para[1:3]
+  alpha = para[-(1:3)]
+  Fhat = F.hat(alpha)
+  contri = rep(0, n)
+  for (i in 1:n) {
+    if (Delta[i] == 1) {
+      k = which(Y[i] == S)
+      contri[i] = log(1 - Sfcn(gamma, Fhat[k + 1], beta, Z[i,]))
+    }
+    if (Delta[i] == 0) {
+      if (Y[i] == t0) {
+        k = which(Y[i] == S)
+        contri[i] = log(Sfcn(gamma, Fhat[k], beta, Z[i,]))
+      }
+      else{
+        k = which(Y[i] <= S)[1] - 1
+        contri[i] = log(Sfcn(gamma, Fhat[k + 1], beta, Z[i,]))
+      }
+    }
+  }
+  return(sum(contri))
+}
+
+Jobs_generic = function(para, Y, Z, S, Delta, gamma, n, t0) {
+  beta1 = para[1:3]
+  alpha = para[-(1:3)]
+  Fhat = F.hat(alpha)
+  J = 0
+  for (i in 1:n) {
+    # a = exp(sum(t(beta1)*Z[i,])) * F.hat(alpha)
+
+    if (Delta[i] == 1) {
+      k = which(Y[i] == S)
+      a = exp(sum(t(beta1) * Z[i,])) * Fhat[k + 1]
+      a0 = G_gamma(a, gamma)
+      a1 = G_gamma_1d(a, gamma)
+      a2 = G_gamma_2d(a, gamma)
+      Ji = -(a2 * a + a1) * (1 - a0) - a1 ^ 2 * a
+      Ji = Ji / (1 - a0) ^ 2 * a * t(t(Z[i,])) %*% Z[i,]
+      J = J - Ji
+    }
+    if (Delta[i] == 0) {
+      if (Y[i] == t0) {
+        k = which(Y[i] == S)
+        a = exp(sum(t(beta1) * Z[i,])) * Fhat[k]
+      }
+      else{
+        k = which(Y[i] <= S)[1] - 1
+        a = exp(sum(t(beta1) * Z[i,])) * Fhat[k + 1]
+      }
+      a0 = G_gamma(a, gamma)
+      a1 = G_gamma_1d(a, gamma)
+      a2 = G_gamma_2d(a, gamma)
+      Ji = (a2 * a + a1) * a0 - a1 ^ 2 * a
+      Ji = Ji / a0 ^ 2 * a * t(t(Z[i,])) %*% Z[i,]
+      J = J - Ji
+    }
+  }
+  return(J)
+}
 
 #' Compute_MLE
 #'
@@ -65,14 +125,15 @@ G_gamma_2d = function(x, gamma) {
 #' beta <- c(-1 / 2, 1,-1 / 2)
 #' t0 <- 4
 #' gamma <- 0.75
-#' cl <- makeCluster(4)
+#' cl <- makeCluster(10)
 #' registerDoSNOW(cl)
 #' result = foreach(i = 1:rep, .packages = "semicure") %dopar% {
+#'    .libPaths(c(.libPaths(), "~/R/x86_64-pc-linux-gnu-library/3.6"))
 #'    n <- 200
 #'    beta <- c(-1 / 2, 1,-1 / 2)
 #'    t0 <- 4
-#'    gamma = 0.75
-#'    Compute_MLE(n, gamma, beta, t0)
+#'    gamma <- 0.75
+#'    semicure::Compute_MLE(n, gamma, beta, t0)
 #' }
 #' stopCluster(cl)
 #'
@@ -92,12 +153,13 @@ G_gamma_2d = function(x, gamma) {
 #' c = qnorm(1 - 0.025)
 #' cnt = c(0, 0)
 #' for (i in 1:rep) {
-#'   Test = abs(estimate[, i] - beta[-1]) <= c * SEE[, i] / sqrt(n)
+#'   Test = abs(estimate[, i] - beta[-1]) <= c * SEE[, i]
 #'   cnt = cnt + Test
 #' }
 #' CP = cnt / rep
 #' CP
 Compute_MLE = function(n, gamma, beta, t0) {
+  Inv_F <- pryr::partial(Inv_F_generic, t0 = t0)
   # n = 400
   # gamma = 0
   Z1 = runif(n)
@@ -105,7 +167,7 @@ Compute_MLE = function(n, gamma, beta, t0) {
   Z = cbind(1, Z1, Z2)
 
   #generate T
-  T <- rep(NA,n)
+  T <- rep(NA, n)
   for (i in 1:n) {
     u = runif(1)
     if (u > (1 - G_gamma(exp(t(beta) %*% Z[i,]), gamma))) {
@@ -135,67 +197,28 @@ Compute_MLE = function(n, gamma, beta, t0) {
     alpha_init[j] = log(-log(1 - exp(sum) / m))
   }
 
-  Lc_log = function(para) {
-    beta = para[1:3]
-    alpha = para[-(1:3)]
-    Fhat = F.hat(alpha)
-    contri = rep(0, n)
-    for (i in 1:n) {
-      if (Delta[i] == 1) {
-        k = which(Y[i] == S)
-        contri[i] = log(1 - Sfcn(gamma, Fhat[k + 1], beta, Z[i,]))
-      }
-      if (Delta[i] == 0) {
-        if (Y[i] == t0) {
-          k = which(Y[i] == S)
-          contri[i] = log(Sfcn(gamma, Fhat[k], beta, Z[i,]))
-        }
-        else{
-          k = which(Y[i] <= S)[1] - 1
-          contri[i] = log(Sfcn(gamma, Fhat[k + 1], beta, Z[i,]))
-        }
-      }
-    }
-    return(sum(contri))
-  }
-
-  Jobs = function(para) {
-    beta1 = para[1:3]
-    alpha = para[-(1:3)]
-    Fhat = F.hat(alpha)
-    J = 0
-    for (i in 1:n) {
-      # a = exp(sum(t(beta1)*Z[i,])) * F.hat(alpha)
-
-      if (Delta[i] == 1) {
-        k = which(Y[i] == S)
-        a = exp(sum(t(beta1) * Z[i,])) * Fhat[k + 1]
-        a0 = G_gamma(a, gamma)
-        a1 = G_gamma_1d(a, gamma)
-        a2 = G_gamma_2d(a, gamma)
-        Ji = -(a2 * a + a1) * (1 - a0) - a1 ^ 2 * a
-        Ji = Ji / (1 - a0) ^ 2 * a * t(t(Z[i,])) %*% Z[i,]
-        J = J - Ji
-      }
-      if (Delta[i] == 0) {
-        if (Y[i] == t0) {
-          k = which(Y[i] == S)
-          a = exp(sum(t(beta1) * Z[i,])) * Fhat[k]
-        }
-        else{
-          k = which(Y[i] <= S)[1] - 1
-          a = exp(sum(t(beta1) * Z[i,])) * Fhat[k + 1]
-        }
-        a0 = G_gamma(a, gamma)
-        a1 = G_gamma_1d(a, gamma)
-        a2 = G_gamma_2d(a, gamma)
-        Ji = (a2 * a + a1) * a0 - a1 ^ 2 * a
-        Ji = Ji / a0 ^ 2 * a * t(t(Z[i,])) %*% Z[i,]
-        J = J - Ji
-      }
-    }
-    return(J)
-  }
+  Lc_log <-
+    pryr::partial(
+      Lc_log_generic,
+      Y = Y,
+      Z = Z,
+      S = S,
+      Delta = Delta,
+      gamma = gamma,
+      n = n,
+      t0 = t0
+    )
+  Jobs <-
+    pryr::partial(
+      Jobs_generic,
+      Y = Y,
+      Z = Z,
+      S = S,
+      Delta = Delta,
+      gamma = gamma,
+      n = n,
+      t0 = t0
+    )
 
   res = optim(
     par = c(0, 0, 0, alpha_init),

@@ -1,5 +1,5 @@
 Package: semicure
-Title: What the Package Does (One Line, Title Case)
+Title: semicure
 Version: 0.0.0.9000
 Authors@R: 
     person(given = "Canyi",
@@ -7,7 +7,7 @@ Authors@R:
            role = c("aut", "cre"),
            email = "chency1997@ruc.edu.cn",
            comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
+Description: Compute estimated parameters for semicure model.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -18,7 +18,9 @@ Imports:
     snow,
     iterators,
     Rcpp,
-    parallel
+    parallel,
+    stats,
+    pryr
 Suggests: 
     testthat (>= 2.1.0)
 RoxygenNote: 7.0.2
