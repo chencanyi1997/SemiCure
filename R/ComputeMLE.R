@@ -108,27 +108,26 @@ Jobs_generic = function(para, Y, Z, S, Delta, gamma, n, t0) {
   return(J)
 }
 
-#' Compute_MLE
+#' Compute Maximum likelihood Estimator
 #'
-#' @param n number of observations
-#' @param gamma rate
-#' @param beta true beta
+#' @param n the number of observations
+#' @param gamma the tradeoff paramter
+#' @param beta true beta value
 #' @param t0 censor time
 #'
-#' @return estimated beta
+#' @return the estimated beta
 #' @export
 #'
 #' @examples
 #' library(doSNOW)
-#' rep <- 10
+#' rep <- 1000
 #' n <- 200
 #' beta <- c(-1 / 2, 1,-1 / 2)
 #' t0 <- 4
 #' gamma <- 0.75
-#' cl <- makeCluster(10)
+#' cl <- makeCluster(100)
 #' registerDoSNOW(cl)
 #' result = foreach(i = 1:rep, .packages = "semicure") %dopar% {
-#'    .libPaths(c(.libPaths(), "~/R/x86_64-pc-linux-gnu-library/3.6"))
 #'    n <- 200
 #'    beta <- c(-1 / 2, 1,-1 / 2)
 #'    t0 <- 4
@@ -137,27 +136,23 @@ Jobs_generic = function(para, Y, Z, S, Delta, gamma, n, t0) {
 #' }
 #' stopCluster(cl)
 #'
-#'
-#' #statistic
+#' # statistic
 #' estimate = matrix(0, ncol = rep, nrow = 2)
 #' SEE = matrix(0, ncol = rep, nrow = 2)
 #' for (i in 1:rep) {
 #'   estimate[, i] = (result[[i]][[1]])[-1]
 #'   SEE[, i] = (result[[i]][[2]])[-1]
 #' }
-#' rowMeans(estimate) # estimate
-#' sqrt(cov(t(estimate))) # SE
-#' rowMeans(SEE) #SEE
 #'
-#' #CP ?????????????
+#' # CP
 #' c = qnorm(1 - 0.025)
 #' cnt = c(0, 0)
 #' for (i in 1:rep) {
 #'   Test = abs(estimate[, i] - beta[-1]) <= c * SEE[, i]
 #'   cnt = cnt + Test
 #' }
-#' CP = cnt / rep
-#' CP
+#' CP <- cnt / rep
+#' result <- data.frame(estiamte=rowMeans(estimate), SE = diag(sqrt(cov(t(estimate)))), SEE = rowMeans(SEE), CP = CP)
 Compute_MLE = function(n, gamma, beta, t0) {
   Inv_F <- pryr::partial(Inv_F_generic, t0 = t0)
   # n = 400
@@ -233,15 +228,65 @@ Compute_MLE = function(n, gamma, beta, t0) {
   return(list(para[1:3], diag(SEE)))
 }
 
-#run time
-# microbenchmark(Compute_MLE(200,0), times = 1)
+#' Replicate the table 1 and 2
+#'
+#' @param gamma the tradeoff parameter
+#' @param n the sample size
+#' @param rep the replication number
+#' @param clusterN the number of cluster
+#'
+#' @return The estimator, SE, SEE, and the  coverage probability of the $95\%$ confidence interval based on the asymtotic normal approximation.
+#' @export
+#'
+#' @examples
+#' # Reproduce table 1
+#' set.seed(47)
+#' for(gamma in seq(0,1,length.out = 5)){
+#'   for(n in c(200,400)){
+#'     reptable(gamma = gamma, n = n,rep = 1000,clusterN = 100 )
+#'   }
+#' }
+#' # Reproduce table 2
+#' for(gamma in seq(0,1,length.out = 3)){
+#'   for(n in c(400)){
+#'     reptable(gamma = gamma, n = n,rep = 1000,clusterN = 100 )
+#'   }
+#' }
+reptable <- function(gamma = 0,
+                     n = 200,
+                     rep = 8,
+                     clusterN = 8) {
+  options(warn = -1)
+  beta <- c(-1 / 2, 1,-1 / 2)
+  t0 = 4
+  cl <- parallel::makeCluster(clusterN)
+  doSNOW::registerDoSNOW(cl)
+  result = foreach::`%dopar%`(foreach::foreach(i = 1:rep), Compute_MLE(n, gamma, beta, t0))
+  parallel::stopCluster(cl)
 
+  #statistic
+  estimate = matrix(0, ncol = rep, nrow = 2)
+  SEE = matrix(0, ncol = rep, nrow = 2)
+  for (i in 1:rep) {
+    estimate[, i] = (result[[i]][[1]])[-1]
+    SEE[, i] = (result[[i]][[2]])[-1]
+  }
 
-# #parallel
+  #CP
+  c = qnorm(1 - 0.025)
+  cnt = c(0, 0)
+  for (i in 1:rep) {
+    Test = abs(estimate[, i] - beta[-1]) <= c * SEE[, i]
+    cnt = cnt + Test
+  }
+  CP = cnt / rep
 
-#run time
-# microbenchmark(Compute_MLE(200,0), times = 1)
-
-# result <- Compute_MLE(200,0)
-# profvis(Compute_MLE(200,0))
-# microbenchmark::microbenchmark(Compute_MLE(200,0),times = 1)
+  return(data.frame(
+    estiamte = rowMeans(estimate),
+    SE = diag(sqrt(cov(t(
+      estimate
+    )))),
+    SEE = rowMeans(SEE),
+    CP = CP
+  ))
+}

@@ -1,0 +1,127 @@
+---
+title: "semicure"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{semicure}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  echo = TRUE
+)
+```
+
+## Introduction
+The population survival function for a with covariates $\mathbf{Z}$ is given by
+$$
+S_{pop}(t|\mathbf{Z})=G_{\gamma}\{e^{\beta^T\mathbf{Z}}F(t)\},
+$$
+where
+$$G_{\gamma}(x)=\left\{
+\begin{aligned}
+&(1+\gamma x)^{-1/\gamma}&,\quad \gamma>0 \\
+&e^{-x}&, \quad \gamma=0.
+\end{aligned}
+\right.
+$$
+This class of models include the proportional hazards cure model and the proportional odds cure model as special cases. When $\gamma=0$, it reduces to the proportional hazards cure model; when $\gamma=1$, it has the proportional odds structure.
+
+## Maximum likelihood estimation
+Suppose that there are $n$ i.i.d. observations. For $i=1,\ldots,n$, we observe $\{Y_i,\Delta_i=I(T_i \leq Y_i),\mathbf{Z}_i\}$, where $T_i$ is the failure time for member $i$, $Y_i$ is the random censoring or inspection time,
+$\mathbf{Z}_i$ is a vector of bounded covariates, and $I(\cdot)$ is the indicator function. The first component of $\mathbf{Z}_i$ is $1$. We assume that the inspection time $Y_i$ is conditionally independent of $T_i$ given $\mathbf{Z}_i$.
+
+The observed-data likelihood function for the parameters $(\beta,F)$ can be expressed, for fixed $\gamma$, as
+$$
+L_n(\beta,F)=\prod_{i=1}^n\left[1-G_{\gamma}\{e^{\beta^T\mathbf{Z}_i}F(Y_i)\}\right]^{\Delta_i}\left[G_{\gamma}\{e^{\beta^T\mathbf{Z}_i}F(Y_i)\}\right]^{1-\Delta_i}.
+$$
+We wish to obtain the maximum likelihood estimators of $(\beta,F)$ by maximize the above likelihood function. The MLEs exist, however, they are not unique since the likelihood function depends on $F$ only through its value at the observed times $Y_i,i=1,\ldots,n$. Thus we focus on the maximization of $L_n(\beta,F)$ over all nondecreasing step functions with jumps at the $Y_i$'s for $F(t)$. We denote the MLEs of $\beta$ and $F$ by $\hat{\beta}_n$ and $\hat{F}_n$. Furthermore, we claim that $\hat{F}_n$ can only have jumps at those $Y_i$'s with $\Delta_i=1$. Let $s_1<\cdots<s_m$ denote the ordered distinct time points of $Y_i,i=1,\ldots,n$ with associated $\Delta_i=1$. For a subject with $\Delta_i=0$ and $s_k<Y_i<s_{k+1}$, consider two distribution functions $F_1$ and $F_2$. which have the same values at all time points except that $F_1(Y_i)=F_1(s_k)$ and $F_2(Y_i)>F_1(s_k)$. Since $G_{\gamma}(\cdot)$ is a decreasing function, it can be easily shown that $L_n(\beta,F_1)>L_n(\beta,F_2)$. Therefore, $\hat{F}_n$ can have positive jumps only at $s_k,k=1,\ldots,m$. Similarly, we can show that $\hat{F}_n(s_m)=1$ since $F$ is a proper distribution function. Therefore we maximize the likelihood function subject to the constraint that $0\leq F(s_1)\leq \cdots \leq F(s_m)=1$.
+
+In this paper we use the following transformation
+$$
+F(s_k)=1-e^{-\sum_{j=1}^ke^{\alpha_j}}, k=1,\ldots,m-1
+$$
+and the constrained optimization problem reduces to the maximization of the likelihood function over $(\beta,\alpha_1,\ldots,\alpha_{m-1})$ without constraints. For small $m$, we use Newton-Raphson algorithm to solve the score equations for $\beta$ and $\{\alpha_k,k=1,\ldots,m-1\}$. When $m$ is large, we use the BFGS algorithm.
+
+## Simulation
+We conducted simulation studies to examine the finite sample performance. We generate data from the model with $\mathbf{Z}=(1,Z_1,Z_2)^T$, where $Z_1$ is a uniform random variable in $[0,1]$, and $Z_2$ is a Bernoulli random variable with a success probability $0.5$. The true parameter values of $\beta=(\beta_0,\beta_1,\beta_2)$ are set to be $(-0.5,1,-0.5)$; and $F(t)=1-\{\exp(-t)-\exp(-t_0)\}I(t\leq t_0)/\{1-\exp(-t_0)\}$, where $t_0=4$. The inspection time was set to be the minimum of $4$ and an exponential variable with mean $2$. We considered five different models by varying the values of $\gamma$ from $0$ to $1$. The average cure rate ranged from $0.45$ to $0.56$ as $\alpha$ changed from $0$ to $1$, whereas the censoring proportion among those un-cured subjects was about $0.26$ for all five models. We considered sample sizes of $200$ and $400$ for each model. For each simulation set-up, we generated $1,000$ data sets. The initial values of the regression parameters were set to be $0$ and the initial jump sizes of $F$ were set to be $1/m$ at $s_1,\ldots,s_m$.
+
+Table $1$ summarizes the results for each combination of $\gamma$ and $n$. The column labeled as "Mean" denotes the sampling mean of the parameter estimator from the true parameter value; "SE" is the sampling standard error of the parameter estimator; "SEE" is the mean of the standard error estimator, which is calculated based on the inverse of the observed information; and "CP(%)" is the coverage probability of the $95\%$ confidence interval based on the asymtotic normal approximation.
+
+
+\begin{table}[htbp]
+  \centering
+    \begin{tabular}{rrlrlrrr}
+    \multicolumn{8}{c}{Table1} \\
+    \multicolumn{1}{l}{model} & \multicolumn{1}{l}{n} & parameter & \multicolumn{1}{l}{true value} & estimate & \multicolumn{1}{l}{SE} & \multicolumn{1}{l}{SEE} & \multicolumn{1}{l}{CP$(\%)$} \\
+    \multicolumn{1}{l}{$\gamma=0$} & 200   & $\beta_1$ & 1     & 1.068938 & 0.4695524 & 0.4364619 & 0.939      \\
+          &       & $\beta_2$ & -0.5  & -0.521181 & 0.2584653 & 0.2504274 & 0.937   \\
+          & 400   & $\beta_1$ & 1     & 1.0505945 & 0.3250769 & 0.3089951 & 0.930   \\
+          &       & $\beta_2$ & -0.5  & -0.5291623 & 0.1774480 & 0.1772027 & 0.954    \\
+    \multicolumn{1}{l}{$\gamma=0.25$} & 200   & $\beta_1$ & 1     &  1.0264490 & 0.4101531 & 0.4171355 & 0.953   \\
+          &       & $\beta_2$ & -0.5  & -0.5176226 & 0.2447230 & 0.2379094 & 0.943    \\
+          & 400   & $\beta_1$ & 1     & 1.0093284 & 0.2932090 & 0.2886965 & 0.951    \\
+          &       & $\beta_2$ & -0.5  & -0.5001677 & 0.1696949 & 0.1650536 & 0.948   \\
+    0.5   & 200   & $\beta_1$ & 1     & 1.0358903 & 0.4981050 & 0.4751191 & 0.936    \\
+          &       & $\beta_2$ & -0.5  & -0.5216513 & 0.2753877 & 0.2711459 & 0.952   \\
+          & 400   & $\beta_1$ & 1     & 1.0075626 & 0.3348825 & 0.3261635 & 0.950   \\
+          &       & $\beta_2$ & -0.5  & -0.5029296 & 0.1911795 & 0.1868073 & 0.944   \\
+    0.75  & 200   & $\beta_1$ & 1     & 1.0402364 & 0.5617290 & 0.5317107 & 0.942      \\
+          &       & $\beta_2$ & -0.5  & -0.5221529 & 0.3055167 & 0.3035736 & 0.952      \\
+          & 400   & $\beta_1$ & 1     & 1.0539893 & 0.3814576 & 0.3710310 & 0.950      \\
+          &       & $\beta_2$ & -0.5  & -0.5212664 & 0.2201302 & 0.2120356 & 0.939      \\
+    \multicolumn{1}{l}{$\gamma=1$} & 200   & $\beta_1$ & 1     & 1.0507689 & 0.6450372 & 0.5942043 & 0.935    \\
+          &       & $\beta_2$ & -0.5  & -0.5344726 & 0.3497060 & 0.3396732 & 0.942      \\
+          & 400   & $\beta_1$ & 1     & 1.014476 & 0.4120969 & 0.4131133 & 0.957       \\
+          &       & $\beta_2$ & -0.5  & -0.507400 & 0.2363958 & 0.2367635 & 0.950        \\
+    \end{tabular}
+\end{table}
+
+The next line of simulation studies concerned about the performance of the commonly used proportional hazards cure model and the proportional odds cure model when data were generated from a different model. Specifically, we used the same setting for generating data in the simulation studies described earlier. The model with $\gamma=1/2$ corresponds to a model between the proportional hazards cure model and the proportional odds cure models. For each simulation setting, we generate $1,000$ replications with sample size of $n=400$. The results are summarized in Table $2$.
+
+
+\begin{table}[htbp]
+  \centering
+    \begin{tabular}{rrlrlrrr}
+    \multicolumn{8}{c}{Table2} \\
+    \multicolumn{1}{l}{model} & \multicolumn{1}{l}{n} & parameter & \multicolumn{1}{l}{true value} & estimate & \multicolumn{1}{l}{SE} & \multicolumn{1}{l}{SEE} & \multicolumn{1}{l}{CP$(\%)$} \\
+    1     & 400   & $\beta_1$ & 1     & 1.3937307 & 0.4186538 & 0.4096311 & 0.851   \\
+          &       & $\beta_2$ & -0.5  & -0.6962886 & 0.2386292 & 0.2333729 & 0.874  \\
+          &       &       &       &       &       &       &  \\
+          &       &       &       &       &       &       &  \\
+    2     & 400   & $\beta_1$ & 1     & 0.8187535 & 0.3240014 & 0.3309839 & 0.920   \\
+          &       & $\beta_2$ & -0.5  & -0.4125800 & 0.1921661 & 0.1912553 & 0.915   \\
+          &       &       &       &       &       &       &  \\
+          &       &       &       &       &       &       &  \\
+    3     & 400   & $\beta_1$ & 1     & 0.8513955 & 0.2909752 & 0.2779960 & 0.908   \\
+          &       & $\beta_2$ & -0.5  & -0.4353248 & 0.1677679 & 0.1600703 & 0.929   \\
+          &       &       &       &       &       &       &  \\
+          &       &       &       &       &       &       &  \\
+    4     & 400   & $\beta_1$ & 1     & 1.1673069 & 0.3901373 & 0.3818890 & 0.930   \\
+          &       & $\beta_2$ & -0.5  & -0.5868782 & 0.2230797 & 0.2181379 & 0.931   \\
+    \end{tabular}%
+\end{table}
+
+To reproduce the results listed above, you can follow the instruction below:
+```{r setup, eval=FALSE}
+devtools::install_github("chencanyi1997/semicure")
+library(semicure)
+
+# Reproduce table 1
+set.seed(47)
+for(gamma in seq(0,1,length.out = 5)){
+  for(n in c(200,400)){
+    reptable(gamma = gamma, n = n,rep = 1000,clusterN = 100 )
+  }
+}
+
+# Reproduce table 2
+for(gamma in seq(0,1,length.out = 3)){
+  for(n in c(400)){
+    reptable(gamma = gamma, n = n,rep = 1000,clusterN = 100 )
+  }
+}
+```

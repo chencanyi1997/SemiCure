@@ -7,15 +7,32 @@
 
 <!-- badges: end -->
 
-The goal of semicure is to …
+The goal of semicure is to estimate the parameters given some i.i.d data
+generated from `semicure model`.
+
+## Introduction
+
+The population survival function for a with covariates \(\mathbf{Z}\) is
+given by \[
+S_{pop}(t|\mathbf{Z})=G_{\gamma}\{e^{\beta^T\mathbf{Z}}F(t)\},
+\] where \[G_{\gamma}(x)=\left\{
+\begin{aligned}
+&(1+\gamma x)^{-1/\gamma}&,\quad \gamma>0 \\
+&e^{-x}&, \quad \gamma=0.
+\end{aligned}
+\right.
+\] This class of models include the proportional hazards cure model and
+the proportional odds cure model as special cases. When \(\gamma=0\), it
+reduces to the proportional hazards cure model; when \(\gamma=1\), it
+has the proportional odds structure.
 
 ## Installation
 
 You can install the released version of semicure from
-[CRAN](https://CRAN.R-project.org) with:
+[Github](https://github.com/chencanyi1997/semicure) with:
 
 ``` r
-install.packages("semicure")
+devtools::install_github("chencanyi1997/semicure")
 ```
 
 ## Example
@@ -25,28 +42,15 @@ This is a basic example which shows you how to solve a common problem:
 ``` r
 library(semicure)
 ## basic example code
+demo(semicuredemo)
 ```
 
-What is special about using `README.Rmd` instead of just `README.md`?
-You can include R chunks like so:
+To see more through sample, you can check the vigenitte accompanied with
+the package. But you should install this package with the following code
+to build vigenitte. It will take a little time to build
+it.
 
 ``` r
-summary(cars)
-#>      speed           dist       
-#>  Min.   : 4.0   Min.   :  2.00  
-#>  1st Qu.:12.0   1st Qu.: 26.00  
-#>  Median :15.0   Median : 36.00  
-#>  Mean   :15.4   Mean   : 42.98  
-#>  3rd Qu.:19.0   3rd Qu.: 56.00  
-#>  Max.   :25.0   Max.   :120.00
+devtools::install_github("chencanyi1997/semicure", build_vignettes = TRUE)
+vignette(semicure)
 ```
-
-You’ll still need to render `README.Rmd` regularly, to keep `README.md`
-up-to-date.
-
-You can also embed plots, for example:
-
-<img src="man/figures/README-pressure-1.png" width="100%" />
-
-In that case, don’t forget to commit and push the resulting figure
-files, so they display on GitHub\!

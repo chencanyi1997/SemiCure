@@ -2,36 +2,35 @@
 % Please edit documentation in R/ComputeMLE.R
 \name{Compute_MLE}
 \alias{Compute_MLE}
-\title{Compute_MLE}
+\title{Compute Maximum likelihood Estimator}
 \usage{
 Compute_MLE(n, gamma, beta, t0)
 }
 \arguments{
-\item{n}{number of observations}
+\item{n}{the number of observations}
 
-\item{gamma}{rate}
+\item{gamma}{the tradeoff paramter}
 
-\item{beta}{true beta}
+\item{beta}{true beta value}
 
 \item{t0}{censor time}
 }
 \value{
-estimated beta
+the estimated beta
 }
 \description{
-Compute_MLE
+Compute Maximum likelihood Estimator
 }
 \examples{
 library(doSNOW)
-rep <- 10
+rep <- 1000
 n <- 200
 beta <- c(-1 / 2, 1,-1 / 2)
 t0 <- 4
 gamma <- 0.75
-cl <- makeCluster(10)
+cl <- makeCluster(100)
 registerDoSNOW(cl)
 result = foreach(i = 1:rep, .packages = "semicure") \%dopar\% {
-   .libPaths(c(.libPaths(), "~/R/x86_64-pc-linux-gnu-library/3.6"))
    n <- 200
    beta <- c(-1 / 2, 1,-1 / 2)
    t0 <- 4
@@ -40,25 +39,21 @@ result = foreach(i = 1:rep, .packages = "semicure") \%dopar\% {
 }
 stopCluster(cl)
 
-
-#statistic
+# statistic
 estimate = matrix(0, ncol = rep, nrow = 2)
 SEE = matrix(0, ncol = rep, nrow = 2)
 for (i in 1:rep) {
   estimate[, i] = (result[[i]][[1]])[-1]
   SEE[, i] = (result[[i]][[2]])[-1]
 }
-rowMeans(estimate) # estimate
-sqrt(cov(t(estimate))) # SE
-rowMeans(SEE) #SEE
 
-#CP ?????????????
+# CP
 c = qnorm(1 - 0.025)
 cnt = c(0, 0)
 for (i in 1:rep) {
   Test = abs(estimate[, i] - beta[-1]) <= c * SEE[, i]
   cnt = cnt + Test
 }
-CP = cnt / rep
-CP
+CP <- cnt / rep
+result <- data.frame(estiamte=rowMeans(estimate), SE = diag(sqrt(cov(t(estimate)))), SEE = rowMeans(SEE), CP = CP)
 }
