@@ -11,3 +11,17 @@ Description: What the package does (one paragraph).
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
+Imports: 
+    microbenchmark,
+    doSNOW,
+    foreach,
+    snow,
+    iterators,
+    Rcpp,
+    parallel
+Suggests: 
+    testthat (>= 2.1.0)
+RoxygenNote: 7.0.2
+LinkingTo: 
+    Rcpp,
+    RcppArmadillo
