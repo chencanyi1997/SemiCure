@@ -2,7 +2,9 @@
 title: "semicure"
 output: rmarkdown::html_vignette
 vignette: |
-  %\VignetteIndexEntry{semicure} %\VignetteEngine{knitr::rmarkdown} %\VignetteEncoding{UTF-8}
+  %\VignetteIndexEntry{semicure} 
+  %\VignetteEngine{knitr::rmarkdown} 
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, include = FALSE}
