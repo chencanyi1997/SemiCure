@@ -1,10 +1,8 @@
 ---
 title: "semicure"
 output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{semicure}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+vignette: |
+  %\VignetteIndexEntry{semicure} %\VignetteEngine{knitr::rmarkdown} %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, include = FALSE}
@@ -13,6 +11,30 @@ knitr::opts_chunk$set(
   comment = "#>",
   echo = TRUE
 )
+```
+
+## Installation
+
+You can install the released version of semicure from [Github](https://github.com/chencanyi1997/semicure) with:
+
+``` r
+devtools::install_github("chencanyi1997/semicure")
+```
+
+## Example
+
+This is a basic example which shows you how to solve a common problem:
+
+```{r example, eval=FALSE}
+library(semicure)
+## basic example code
+demo(semicuredemo)
+```
+
+To see more through sample, you can check the vigenitte accompanied with the package. But you should install this package with the following code to build vigenitte. It will take a little time to build it.
+```{r, eval=FALSE}
+devtools::install_github("chencanyi1997/semicure", build_vignettes = TRUE)
+vignette(semicure)
 ```
 
 ## Introduction
