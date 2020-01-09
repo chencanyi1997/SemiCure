@@ -56,6 +56,6 @@ demo(semicuredemo)
 To see more through sample, you can check the vigenitte accompanied with the package. But you should install this package with the following code to build vigenitte. It will take a little time to build it.
 ```{r, eval=FALSE}
 devtools::install_github("chencanyi1997/semicure", build_vignettes = TRUE)
-vignette(semicure)
+vignette("semicure")
 ```
 

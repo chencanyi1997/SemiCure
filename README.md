@@ -52,5 +52,5 @@ it.
 
 ``` r
 devtools::install_github("chencanyi1997/semicure", build_vignettes = TRUE)
-vignette(semicure)
+vignette("semicure")
 ```
