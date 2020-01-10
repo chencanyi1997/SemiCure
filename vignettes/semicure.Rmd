@@ -15,6 +15,7 @@ knitr::opts_chunk$set(
 )
 ```
 
+
 ## Installation
 
 You can install the released version of semicure from [Github](https://github.com/chencanyi1997/semicure) with:
@@ -70,11 +71,53 @@ F(s_k)=1-e^{-\sum_{j=1}^ke^{\alpha_j}}, k=1,\ldots,m-1
 $$
 and the constrained optimization problem reduces to the maximization of the likelihood function over $(\beta,\alpha_1,\ldots,\alpha_{m-1})$ without constraints. For small $m$, we use Newton-Raphson algorithm to solve the score equations for $\beta$ and $\{\alpha_k,k=1,\ldots,m-1\}$. When $m$ is large, we use the BFGS algorithm.
 
+\begin{algorithm}[H]
+\DontPrintSemicolon
+\SetAlgoLined
+\SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
+\Input{$\gamma,\{Y_i,Z_i,\Delta_i\}_{i=1}^n$.}
+\Output{$\hat{\beta}_1,\hat{\beta}_2$ and $\hat{\alpha}_1,\ldots,\hat{\alpha}_{m-1}$.}
+\BlankLine
+Compute $m$ and find $s_1,\ldots,s_m$ defined in the previous section.
+
+Initialize $\beta_0 = \beta_1 = \beta_2=0$.
+
+Initialize $\alpha_1 = \log\{-\log(1-1/m)\},\alpha_k = \log[-\log\{1-\exp(\sum_{j=1}^{k-1}\alpha_j)/m\}],k=1,\ldots,m-1$, 
+
+such that $\hat{F}$ has jump size of $1/m$ at $s_1,\ldots,s_m$.
+
+\For{$i=1,\ldots,n$}{
+  \eIf{$\Delta_i=1$}{
+    Find index $k$ such that $Y_i=s_k$, and $l_i=\log\left[1-G_\gamma\{\mathrm{e}^{\beta^T Z_i} \hat{F}(s_k)\}\right].$
+  }{
+  Find index $k$ such that $s_k<Y_i<s_{k+1}$, and $l_i=\log\left[G_\gamma\{\mathrm{e}^{\beta^T Z_i} \hat{F}(s_k)\}\right]$
+  }
+}
+Minimize the log-likelihood function $l_n(\beta,\alpha) = \sum_{i=1}^nl_i(\beta,\alpha)$ to obtain $(\hat{\beta},\hat{\alpha})$, where $\beta = (\beta_0,\beta_1,\beta_2),\alpha = (\alpha_1,\ldots,\alpha_{m-1})$.
+
+\caption{Compute MLE using quasi-Newton method}
+\end{algorithm}
+
 ## Simulation
 We conducted simulation studies to examine the finite sample performance. We generate data from the model with $\mathbf{Z}=(1,Z_1,Z_2)^T$, where $Z_1$ is a uniform random variable in $[0,1]$, and $Z_2$ is a Bernoulli random variable with a success probability $0.5$. The true parameter values of $\beta=(\beta_0,\beta_1,\beta_2)$ are set to be $(-0.5,1,-0.5)$; and $F(t)=1-\{\exp(-t)-\exp(-t_0)\}I(t\leq t_0)/\{1-\exp(-t_0)\}$, where $t_0=4$. The inspection time was set to be the minimum of $4$ and an exponential variable with mean $2$. We considered five different models by varying the values of $\gamma$ from $0$ to $1$. The average cure rate ranged from $0.45$ to $0.56$ as $\alpha$ changed from $0$ to $1$, whereas the censoring proportion among those un-cured subjects was about $0.26$ for all five models. We considered sample sizes of $200$ and $400$ for each model. For each simulation set-up, we generated $1,000$ data sets. The initial values of the regression parameters were set to be $0$ and the initial jump sizes of $F$ were set to be $1/m$ at $s_1,\ldots,s_m$.
 
 Table $1$ summarizes the results for each combination of $\gamma$ and $n$. The column labeled as "Mean" denotes the sampling mean of the parameter estimator from the true parameter value; "SE" is the sampling standard error of the parameter estimator; "SEE" is the mean of the standard error estimator, which is calculated based on the inverse of the observed information; and "CP(%)" is the coverage probability of the $95\%$ confidence interval based on the asymtotic normal approximation.
 
+* Estimate:  $$\bar{\beta}_r^M = \frac{1}{M}\sum_{m=1}^M \hat{\beta}_r^{(m)},~~r=1,2.$$
+
+* SE: $$SE(\hat{\beta}_r) = \left\{\frac{1}{M}\sum_{m=1}^M \left(\hat{\beta}_r^{(m)} - \bar{\beta}_r^M\right)^2\right\}^{1/2},~~r=1,2.$$
+
+* SSE: In $m$th replication, $$SSE(\hat{\beta}^{(m)}) = J(\hat{\beta}^{(m)})^{-1/2} = \left\{ -\sum_{i=1}^n\frac{\partial ^2 l_i(\hat{\beta}^{(m)},\hat{\alpha}^{(m)})}{\partial \beta \partial \beta^T} \right\}^{-1/2},~~m=1,\ldots,M,$$
+where $$\frac{\partial ^2 l_i(\hat{\beta}^{(m)},\hat{\alpha}^{(m)})}{\partial \beta \partial \beta^T} = \begin{cases} 
+\frac{\left\{-G_\gamma''\left(a_i^{(m)}\right)a_i^{(m)} - G'_\gamma\left(a_i^{(m)}\right)\right\}(1-G_\gamma(a_i^{(m)})) - \left\{G'_\gamma(a_i^{(m)})\right\}^2 a_i^{(m)}}
+{\left\{1-G_\gamma(a_i^{(m)})\right\}^2},  & \mbox{if }\Delta_i =1, \\
+\frac{\left\{G_\gamma''\left(a_i^{(m)}\right)a_i^{(m)} + G'_\gamma\left(a_i^{(m)}\right)\right\}G_\gamma(a_i^{(m)}) - \left\{G'_\gamma(a_i^{(m)})\right\}^2 a_i^{(m)}}
+{\left\{G_\gamma(a_i^{(m)})\right\}^2}, & \mbox{if }\Delta_i=0.
+\end{cases}$$
+In the equations above, $G'_\gamma(x),G''_\gamma(x)$ is the first and the second derivative with respect to $x$ respectively and $a_i^{(m)} = \mathrm{e}^{Z_i^T \hat{\beta}^{(m)}}\hat{F}(s_k)$, where $s_k$ is related to $Y_i$ according to the algorithm.
+Finally, $$SSE(\hat{\beta}) = \frac{1}{M}\sum_{m=1}^M SSE(\hat{\beta}^{(m)})$$
+
+* CP: By CLT, $\sqrt{n}(\hat{\beta}-\beta_0) \overset{\underset{\mathrm{d}}{}}{\longrightarrow} \mathrm{N}(0, I(\beta)^{-1})$. For each replication, construct a 95% confidence interval based on the asympototic distribution, then count the total number $K$ of times that the true value falls into the interval,  $CP = K/M \times 100\%.$
 
 \begin{table}[htbp]
   \centering
